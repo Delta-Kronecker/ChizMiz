@@ -1,4 +1,4 @@
-name: Merge Mahsa Configs
+name: Merge Configs
 
 on:
   schedule:
@@ -33,6 +33,7 @@ jobs:
           import requests
           import base64
           import os
+          from datetime import datetime
           
           urls = [
               "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mci/sub_1.txt",
@@ -46,42 +47,126 @@ jobs:
           ]
           
           all_configs = []
+          url_stats = []
           failed_urls = []
           
-          for url in urls:
+          print("=" * 80)
+          print(f"STARTING MERGE at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+          print("=" * 80)
+          
+          for idx, url in enumerate(urls, 1):
               try:
-                  print(f"Downloading: {url}")
+                  print(f"\n[{idx}/{len(urls)}] Processing: {url}")
                   response = requests.get(url, timeout=30)
                   response.raise_for_status()
                   
                   content = response.text.strip()
+                  raw_size = len(content)
                   
                   if content:
                       try:
                           decoded = base64.b64decode(content).decode('utf-8', errors='ignore')
+                          decoded_lines = len(decoded.splitlines())
+                          decoded_size = len(decoded)
+                          
                           all_configs.append(decoded)
-                          print(f"Successfully decoded {url}")
+                          url_stats.append({
+                              'url': url,
+                              'raw_size': raw_size,
+                              'decoded_lines': decoded_lines,
+                              'decoded_size': decoded_size,
+                              'status': 'SUCCESS'
+                          })
+                          
+                          print(f"  ✓ Decoded successfully")
+                          print(f"    Raw data size: {raw_size} bytes")
+                          print(f"    Decoded size: {decoded_size} bytes")
+                          print(f"    Lines: {decoded_lines}")
+                          
                       except Exception as e:
-                          print(f"Failed to decode {url}: {str(e)}")
+                          print(f"  ✗ Failed to decode: {str(e)}")
                           failed_urls.append(url)
+                          url_stats.append({
+                              'url': url,
+                              'raw_size': raw_size,
+                              'decoded_lines': 0,
+                              'decoded_size': 0,
+                              'status': 'DECODE_ERROR',
+                              'error': str(e)
+                          })
                   else:
-                      print(f"Empty content from {url}")
+                      print(f"  ✗ Empty content")
                       failed_urls.append(url)
+                      url_stats.append({
+                          'url': url,
+                          'raw_size': 0,
+                          'decoded_lines': 0,
+                          'decoded_size': 0,
+                          'status': 'EMPTY_CONTENT'
+                      })
                       
               except Exception as e:
-                  print(f"Failed to download {url}: {str(e)}")
+                  print(f"  ✗ Failed to download: {str(e)}")
                   failed_urls.append(url)
+                  url_stats.append({
+                      'url': url,
+                      'raw_size': 0,
+                      'decoded_lines': 0,
+                      'decoded_size': 0,
+                      'status': 'DOWNLOAD_ERROR',
+                      'error': str(e)
+                  })
           
-          with open('MahsaConfig.txt', 'w', encoding='utf-8') as f:
-              for config in all_configs:
-                  f.write(config)
-                  f.write('\n')
+          print("\n" + "=" * 80)
+          print("SUMMARY REPORT")
+          print("=" * 80)
           
-          print(f"Total configs merged: {len(all_configs)}")
+          total_lines = 0
+          for stat in url_stats:
+              status_symbol = "✓" if stat['status'] == 'SUCCESS' else "✗"
+              print(f"{status_symbol} {stat['url']}")
+              print(f"   Status: {stat['status']}")
+              if stat['status'] == 'SUCCESS':
+                  print(f"   Lines: {stat['decoded_lines']}")
+                  print(f"   Size: {stat['decoded_size']} bytes")
+                  total_lines += stat['decoded_lines']
+              if 'error' in stat:
+                  print(f"   Error: {stat['error']}")
+              print()
+          
+          print("=" * 80)
+          print(f"TOTAL LINES MERGED: {total_lines}")
+          print(f"SUCCESSFUL URLs: {len(url_stats) - len(failed_urls)}/{len(urls)}")
+          print(f"FAILED URLs: {len(failed_urls)}/{len(urls)}")
+          
           if failed_urls:
-              print(f"Failed URLs: {len(failed_urls)}")
+              print("\nFAILED URLs:")
               for url in failed_urls:
                   print(f"  - {url}")
+          
+          if all_configs:
+              with open('MahsaConfig.txt', 'w', encoding='utf-8') as f:
+                  for config in all_configs:
+                      f.write(config)
+                      if not config.endswith('\n'):
+                          f.write('\n')
+              
+              final_lines = 0
+              with open('MahsaConfig.txt', 'r', encoding='utf-8') as f:
+                  final_lines = len(f.readlines())
+              
+              print(f"\nFINAL OUTPUT:")
+              print(f"  File: MahsaConfig.txt")
+              print(f"  Total lines: {final_lines}")
+              print(f"  File size: {os.path.getsize('MahsaConfig.txt')} bytes")
+          else:
+              print("\n⚠ WARNING: No configs were successfully merged!")
+              with open('MahsaConfig.txt', 'w', encoding='utf-8') as f:
+                  f.write("# No configs available\n")
+          
+          print("=" * 80)
+          print(f"FINISHED at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+          print("=" * 80)
           EOF
       
       - name: Run merge script
@@ -93,6 +178,7 @@ jobs:
           if [ -f "MahsaConfig.txt" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "File size: $(wc -c < MahsaConfig.txt) bytes"
+            echo "Line count: $(wc -l < MahsaConfig.txt)"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
             echo "No file created!"
