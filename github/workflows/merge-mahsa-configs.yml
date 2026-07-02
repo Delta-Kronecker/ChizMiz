@@ -1,0 +1,119 @@
+name: Merge Mahsa Configs
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  merge-configs:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Create merge script
+        run: |
+          cat > merge_configs.py << 'EOF'
+          import requests
+          import base64
+          import os
+          
+          urls = [
+              "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mci/sub_1.txt",
+              "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mci/sub_2.txt",
+              "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mci/sub_3.txt",
+              "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mci/sub_4.txt",
+              "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mtn/sub_1.txt",
+              "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mtn/sub_2.txt",
+              "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mtn/sub_3.txt",
+              "https://raw.githubusercontent.com/mahsanet/MahsaFreeConfig/refs/heads/main/mtn/sub_4.txt"
+          ]
+          
+          all_configs = []
+          failed_urls = []
+          
+          for url in urls:
+              try:
+                  print(f"Downloading: {url}")
+                  response = requests.get(url, timeout=30)
+                  response.raise_for_status()
+                  
+                  content = response.text.strip()
+                  
+                  if content:
+                      try:
+                          decoded = base64.b64decode(content).decode('utf-8', errors='ignore')
+                          all_configs.append(decoded)
+                          print(f"Successfully decoded {url}")
+                      except Exception as e:
+                          print(f"Failed to decode {url}: {str(e)}")
+                          failed_urls.append(url)
+                  else:
+                      print(f"Empty content from {url}")
+                      failed_urls.append(url)
+                      
+              except Exception as e:
+                  print(f"Failed to download {url}: {str(e)}")
+                  failed_urls.append(url)
+          
+          with open('MahsaConfig.txt', 'w', encoding='utf-8') as f:
+              for config in all_configs:
+                  f.write(config)
+                  f.write('\n')
+          
+          print(f"Total configs merged: {len(all_configs)}")
+          if failed_urls:
+              print(f"Failed URLs: {len(failed_urls)}")
+              for url in failed_urls:
+                  print(f"  - {url}")
+          EOF
+      
+      - name: Run merge script
+        run: python merge_configs.py
+      
+      - name: Check if file exists
+        id: check_file
+        run: |
+          if [ -f "MahsaConfig.txt" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "File size: $(wc -c < MahsaConfig.txt) bytes"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No file created!"
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_file.outputs.exists == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          git add MahsaConfig.txt
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update MahsaConfig.txt [skip ci]"
+            git push
+            echo "Changes pushed successfully"
+          fi
+      
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mahsa-config
+          path: MahsaConfig.txt
+          retention-days: 7
