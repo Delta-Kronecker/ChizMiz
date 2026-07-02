@@ -23,6 +23,10 @@ jobs:
         with:
           python-version: '3.10'
       
+      - name: Install dependencies
+        run: |
+          pip install requests
+      
       - name: Create merge script
         run: |
           cat > merge_configs.py << 'EOF'
