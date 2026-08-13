@@ -1,0 +1,3624 @@
+[
+    {
+        "remarks": "💦 1 - VLESS F - Domain : 443",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "servers": [
+                {
+                    "address": "fakedns",
+                    "domains": [
+                        "full:lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev"
+                    ],
+                    "skipFallback": false
+                },
+                {
+                    "address": "https://8.8.8.8/dns-query",
+                    "tag": "remote-dns"
+                },
+                {
+                    "address": "1.1.1.1",
+                    "domains": [
+                        "full:lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev"
+                    ],
+                    "skipFallback": true
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiUVFqbWRwdVkiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lASCG6Lg4hwccGxFqAxC-zNLMzyrD4J4.DiracDelTAiN2.WORkErS.DeV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "outboundTag": "block",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "outboundTag": "proxy",
+                    "type": "field"
+                }
+            ]
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 2 - VLESS F - Domain : 443",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "servers": [
+                {
+                    "address": "fakedns",
+                    "domains": [
+                        "full:www.speedtest.net"
+                    ],
+                    "skipFallback": false
+                },
+                {
+                    "address": "https://8.8.8.8/dns-query",
+                    "tag": "remote-dns"
+                },
+                {
+                    "address": "1.1.1.1",
+                    "domains": [
+                        "full:www.speedtest.net"
+                    ],
+                    "skipFallback": true
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "www.speedtest.net",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiZDJ5Sm1VVnIiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lAscG6Lg4hwccgxFQAxC-ZNLmzYRd4j4.dIrAcdEltAIN2.WOrkeRS.deV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "outboundTag": "block",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "outboundTag": "proxy",
+                    "type": "field"
+                }
+            ]
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 3 - VLESS F - IPv4 : 443",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "servers": [
+                "fakedns",
+                {
+                    "address": "https://8.8.8.8/dns-query",
+                    "tag": "remote-dns"
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "172.67.145.126",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiSklYWHkzSEEiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "laSCG6LG4HwCCgxFQaxc-ZnlmZYrD4J4.DirAcDeLtAIn2.wOrKerS.dEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "outboundTag": "block",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "outboundTag": "proxy",
+                    "type": "field"
+                }
+            ]
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 4 - VLESS F - IPv4 : 443",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "servers": [
+                "fakedns",
+                {
+                    "address": "https://8.8.8.8/dns-query",
+                    "tag": "remote-dns"
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "104.21.65.130",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoib3BtdVR6N1FHVFR3IiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lASCg6Lg4hWCCgxfQaXC-ZNlmZYrD4j4.DIraCdElTaIN2.workERs.deV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "outboundTag": "block",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "outboundTag": "proxy",
+                    "type": "field"
+                }
+            ]
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 5 - VLESS F - IPv6 : 443",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "servers": [
+                "fakedns",
+                {
+                    "address": "https://8.8.8.8/dns-query",
+                    "tag": "remote-dns"
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "[2606:4700:3035::ac43:917e]",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiMVRiMWJHbVJPIiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LAscG6lg4hwcCgxFQaxC-ZnlMzYRd4J4.DIRAcDeLtAin2.Workers.dev",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "outboundTag": "block",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "outboundTag": "proxy",
+                    "type": "field"
+                }
+            ]
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 6 - VLESS F - IPv6 : 443",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "servers": [
+                "fakedns",
+                {
+                    "address": "https://8.8.8.8/dns-query",
+                    "tag": "remote-dns"
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "[2606:4700:3030::6815:4182]",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiVGVZSGxNTG1IZSIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LAScG6Lg4HwccgxfqAxC-znLmZyrD4j4.diracdeLtAiN2.WORkErS.dEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "outboundTag": "block",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "outboundTag": "proxy",
+                    "type": "field"
+                }
+            ]
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 Best Ping F 🚀",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "servers": [
+                {
+                    "address": "fakedns",
+                    "domains": [
+                        "full:lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "full:www.speedtest.net"
+                    ],
+                    "skipFallback": false
+                },
+                {
+                    "address": "https://8.8.8.8/dns-query",
+                    "tag": "remote-dns"
+                },
+                {
+                    "address": "1.1.1.1",
+                    "domains": [
+                        "full:lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "full:www.speedtest.net"
+                    ],
+                    "skipFallback": true
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiUVFqbWRwdVkiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lASCG6Lg4hwccGxFqAxC-zNLMzyrD4J4.DiracDelTAiN2.WORkErS.DeV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-1"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "www.speedtest.net",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiZDJ5Sm1VVnIiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lAscG6Lg4hwccgxFQAxC-ZNLmzYRd4j4.dIrAcdEltAIN2.WOrkeRS.deV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-2"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "172.67.145.126",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiSklYWHkzSEEiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "laSCG6LG4HwCCgxFQaxc-ZnlmZYrD4J4.DirAcDeLtAIn2.wOrKerS.dEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-3"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "104.21.65.130",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoib3BtdVR6N1FHVFR3IiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lASCg6Lg4hWCCgxfQaXC-ZNlmZYrD4j4.DIraCdElTaIN2.workERs.deV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-4"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "[2606:4700:3035::ac43:917e]",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiMVRiMWJHbVJPIiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LAscG6lg4hwcCgxFQaxC-ZnlMzYRd4J4.DIRAcDeLtAin2.Workers.dev",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-5"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "[2606:4700:3030::6815:4182]",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiVGVZSGxNTG1IZSIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LAScG6Lg4HwccgxfqAxC-znLmZyrD4j4.diracdeLtAiN2.WORkErS.dEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "5-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-6"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "balancerTag": "all-proxies",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "outboundTag": "block",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "balancerTag": "all-proxies",
+                    "type": "field"
+                }
+            ],
+            "balancers": [
+                {
+                    "tag": "all-proxies",
+                    "selector": [
+                        "proxy"
+                    ],
+                    "strategy": {
+                        "type": "leastPing"
+                    },
+                    "fallbackTag": "proxy-2"
+                }
+            ]
+        },
+        "observatory": {
+            "subjectSelector": [
+                "proxy"
+            ],
+            "probeUrl": "https://www.gstatic.com/generate_204",
+            "probeInterval": "30s",
+            "enableConcurrency": true
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 Best Fragment 😎",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "hosts": {
+                "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev": [
+                    "104.21.65.130",
+                    "172.67.145.126"
+                ]
+            },
+            "servers": [
+                "fakedns",
+                {
+                    "address": "https://8.8.8.8/dns-query",
+                    "tag": "remote-dns"
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiSG1rYnVxNmIwNnpnYiIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "laScG6LG4hwcCgxFqAXC-znLMZYRd4j4.diRAcdELTaIN2.WorKERS.dEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "1-5",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-1"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiQm1pYjJWZjFIZlQ2UiIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LaScG6lG4HWCCGxFqaXC-ZnlmZYRD4j4.DIRACdELtAIn2.wORKERS.dEv",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "1-10",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-2"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiRU1XMFNwakZQIiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lasCg6Lg4HWCCGXFqaxc-znlMzYrd4J4.diracDELtAiN2.WORkerS.dEv",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "10-20",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-3"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoicUY0NXlNUXhKVld4d0VFTiIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lAScg6lg4hwCcGxfqAxc-zNLMZyrd4j4.DiRAcdelTaIN2.woRKErS.Dev",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "20-30",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-4"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiNW12Z1FRUzcyMHV2b3IiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LAsCg6lG4HWCcgxfQaxc-zNlmzyRd4j4.DIraCdeLTAiN2.WORKERS.DEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "30-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-5"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiTmxvY09lUnMwWG5aYW5yIiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LAscg6LG4hWccGXFQaxC-ZnLMZyrd4j4.dIRAcdEltAin2.WOrkERS.DEv",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "40-50",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-6"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiRERJbTZ4b2pNaCIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LAscG6lG4hwCcgxfqAxC-znlMzyRD4j4.DiRaCDeLtAin2.wOrKerS.DeV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "50-60",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-7"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiNzVKemp5enRCeGwiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LaScg6lg4hWcCGxFqaXc-ZnLmZyrD4j4.DIrAcdeLtAin2.WORKeRs.dEv",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "60-70",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-8"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiSlJZTzlIMTRjSCIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LaScG6lG4hWccGxfQaxC-znLmZyRD4J4.dIRacdELtaiN2.WorKerS.dEv",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "70-80",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-9"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoic1U0cVFiWVMiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LaSCg6LG4HwCCGxfqaXc-ZNLMzYRd4j4.DiRAcDeltain2.workERs.DEv",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "80-90",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-10"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiUDNUNlE3NFhrIiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lAsCg6Lg4hwCcgxfqaxC-znlmzYrd4J4.DiraCdEltAIn2.wORkErs.deV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "90-100",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-11"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiVzRlbVBOZnlnbDVSRjlyIiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lasCg6Lg4hwCCgxFQAXC-ZNLmzyrD4j4.diRaCdElTAIn2.wORkERs.DEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "10-30",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-12"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoicTdMWmFhUEhid2tXUE4xciIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lAsCG6LG4hWCCgXFQaXC-ZNlmZyrD4J4.DIrACdeLtAin2.WORkERs.DEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "20-40",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-13"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoibDA1UFJlb3RsMFBlIiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lascG6lG4HWcCgXFqAxC-znLMZYrd4J4.dirACDeltaiN2.WOrKErs.dev",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "30-50",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-14"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiVWt5NHRmaVBtWiIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LAScG6Lg4hWcCGxFQAXc-zNlmzyRD4J4.DIRACDElTAin2.WoRKers.DEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "40-60",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-15"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoic3FodXd0WEUiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lasCg6LG4HWCcGxfqAxc-ZNlMzYrD4J4.DIracDEltAiN2.worKErs.dEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "50-70",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-16"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiQUlNdmxJRFdodlUwZjI4IiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LascG6Lg4HWCcGxFQAxc-zNlmzYrD4j4.diRAcDELTaiN2.WoRKerS.DEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "60-80",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-17"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiSFFXcXlpNzIiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "LasCg6Lg4hWCcGXfQaxC-zNLmZyRd4j4.DIracdeLTain2.worKErs.Dev",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "70-90",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-18"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoiQ0tMbkVDdEx0ckxsTm9KIiwicHJvdG9jb2wiOiJ2bCIsIm1vZGUiOiJwcm94eWlwIiwicGFuZWxJUHMiOltdfQ==?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "laSCg6lg4hwccGXFQAxC-ZnLmzYRD4J4.DiRAcDEltAIN2.wOrkERs.dev",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "80-100",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-19"
+            },
+            {
+                "protocol": "vless",
+                "settings": {
+                    "vnext": [
+                        {
+                            "address": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                            "port": 443,
+                            "users": [
+                                {
+                                    "id": "f35c60b6-7988-451c-8064-e1ea8737526c",
+                                    "encryption": "none"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "streamSettings": {
+                    "network": "ws",
+                    "wsSettings": {
+                        "host": "lascg6lg4hwccgxfqaxc-znlmzyrd4j4.diracdeltain2.workers.dev",
+                        "path": "/eyJqdW5rIjoidjh6aTVxR210eSIsInByb3RvY29sIjoidmwiLCJtb2RlIjoicHJveHlpcCIsInBhbmVsSVBzIjpbXX0=?ed=2560"
+                    },
+                    "security": "tls",
+                    "tlsSettings": {
+                        "serverName": "lAscG6lG4HWCCgXFQAxc-znLmZYrd4J4.DIRACdEltAiN2.wORKErs.DEV",
+                        "fingerprint": "chrome",
+                        "alpn": [
+                            "http/1.1"
+                        ]
+                    },
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    },
+                    "finalmask": {
+                        "tcp": [
+                            {
+                                "type": "fragment",
+                                "settings": {
+                                    "packets": "1-3",
+                                    "length": "100-200",
+                                    "delay": "1-2",
+                                    "maxSplit": "5"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "tag": "proxy-20"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "balancerTag": "all-proxies",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "outboundTag": "block",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "balancerTag": "all-proxies",
+                    "type": "field"
+                }
+            ],
+            "balancers": [
+                {
+                    "tag": "all-proxies",
+                    "selector": [
+                        "proxy"
+                    ],
+                    "strategy": {
+                        "type": "leastPing"
+                    }
+                }
+            ]
+        },
+        "observatory": {
+            "subjectSelector": [
+                "proxy"
+            ],
+            "probeUrl": "https://www.gstatic.com/generate_204",
+            "probeInterval": "30s",
+            "enableConcurrency": true
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 1 - Workerless ⭐",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "hosts": {
+                "cloudflare-dns.com": [
+                    "cloudflare.com"
+                ]
+            },
+            "servers": [
+                {
+                    "address": "fakedns",
+                    "domains": [
+                        "full:cloudflare.com"
+                    ],
+                    "skipFallback": false
+                },
+                {
+                    "address": "https://cloudflare-dns.com/dns-query",
+                    "tag": "remote-dns"
+                },
+                {
+                    "address": "1.1.1.1",
+                    "domains": [
+                        "full:cloudflare.com"
+                    ],
+                    "skipFallback": false
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "quic",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "fragment": {
+                        "packets": "1-3",
+                        "length": "5-40",
+                        "interval": "1-2",
+                        "maxSplit": "5"
+                    }
+                },
+                "streamSettings": {
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    }
+                },
+                "tag": "proxy"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "fragment": {
+                        "packets": "1-1",
+                        "length": "5-40",
+                        "interval": "1-2",
+                        "maxSplit": "5"
+                    }
+                },
+                "streamSettings": {
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    }
+                },
+                "tag": "http-fragment"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "noises": [
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        },
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        },
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        },
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        },
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        }
+                    ],
+                    "domainStrategy": "UseIPv4v6"
+                },
+                "tag": "udp-noise"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "protocol": [
+                        "tls"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "protocol": [
+                        "http"
+                    ],
+                    "outboundTag": "http-fragment",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "protocol": [
+                        "quic"
+                    ],
+                    "outboundTag": "udp-noise",
+                    "type": "field"
+                },
+                {
+                    "port": "443,2053,2083,2087,2096,8443",
+                    "network": "udp",
+                    "outboundTag": "udp-noise",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp,udp",
+                    "outboundTag": "direct",
+                    "type": "field"
+                }
+            ]
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    },
+    {
+        "remarks": "💦 2 - Workerless ⭐",
+        "version": {
+            "min": "26.2.6"
+        },
+        "log": {
+            "loglevel": "none"
+        },
+        "dns": {
+            "hosts": {
+                "dns.google": [
+                    "8.8.8.8",
+                    "8.8.4.4"
+                ]
+            },
+            "servers": [
+                "fakedns",
+                {
+                    "address": "https://dns.google/dns-query",
+                    "tag": "remote-dns"
+                }
+            ],
+            "queryStrategy": "UseIP",
+            "tag": "dns"
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10808,
+                "protocol": "mixed",
+                "settings": {
+                    "auth": "noauth",
+                    "udp": true
+                },
+                "sniffing": {
+                    "destOverride": [
+                        "http",
+                        "tls",
+                        "quic",
+                        "fakedns"
+                    ],
+                    "enabled": true,
+                    "routeOnly": true
+                },
+                "tag": "mixed-in"
+            },
+            {
+                "listen": "127.0.0.1",
+                "port": 10853,
+                "protocol": "dokodemo-door",
+                "settings": {
+                    "address": "1.1.1.1",
+                    "network": "tcp,udp",
+                    "port": 53
+                },
+                "tag": "dns-in"
+            }
+        ],
+        "outbounds": [
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "fragment": {
+                        "packets": "1-3",
+                        "length": "5-40",
+                        "interval": "1-2",
+                        "maxSplit": "5"
+                    }
+                },
+                "streamSettings": {
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    }
+                },
+                "tag": "proxy"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "fragment": {
+                        "packets": "1-1",
+                        "length": "5-40",
+                        "interval": "1-2",
+                        "maxSplit": "5"
+                    }
+                },
+                "streamSettings": {
+                    "sockopt": {
+                        "domainStrategy": "UseIP",
+                        "happyEyeballs": {
+                            "tryDelayMs": 250,
+                            "prioritizeIPv6": false,
+                            "interleave": 2,
+                            "maxConcurrentTry": 4
+                        }
+                    }
+                },
+                "tag": "http-fragment"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "noises": [
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        },
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        },
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        },
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        },
+                        {
+                            "rand": "50-100",
+                            "randRange": "0-255",
+                            "delay": "1-1"
+                        }
+                    ],
+                    "domainStrategy": "UseIPv4v6"
+                },
+                "tag": "udp-noise"
+            },
+            {
+                "protocol": "dns",
+                "settings": {
+                    "rules": [
+                        {
+                            "action": "hijack"
+                        }
+                    ]
+                },
+                "tag": "dns-out"
+            },
+            {
+                "protocol": "freedom",
+                "settings": {
+                    "domainStrategy": "UseIP"
+                },
+                "tag": "direct"
+            },
+            {
+                "protocol": "blackhole",
+                "settings": {
+                    "response": {
+                        "type": "http"
+                    }
+                },
+                "tag": "block"
+            }
+        ],
+        "routing": {
+            "domainStrategy": "IPIfNonMatch",
+            "rules": [
+                {
+                    "inboundTag": [
+                        "mixed-in"
+                    ],
+                    "port": 53,
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns-in"
+                    ],
+                    "outboundTag": "dns-out",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "remote-dns"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "inboundTag": [
+                        "dns"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "domain": [
+                        "geosite:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "ip": [
+                        "geoip:private"
+                    ],
+                    "outboundTag": "direct",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "protocol": [
+                        "tls"
+                    ],
+                    "outboundTag": "proxy",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp",
+                    "protocol": [
+                        "http"
+                    ],
+                    "outboundTag": "http-fragment",
+                    "type": "field"
+                },
+                {
+                    "network": "udp",
+                    "protocol": [
+                        "quic"
+                    ],
+                    "outboundTag": "udp-noise",
+                    "type": "field"
+                },
+                {
+                    "port": "443,2053,2083,2087,2096,8443",
+                    "network": "udp",
+                    "outboundTag": "udp-noise",
+                    "type": "field"
+                },
+                {
+                    "network": "tcp,udp",
+                    "outboundTag": "direct",
+                    "type": "field"
+                }
+            ]
+        },
+        "policy": {
+            "levels": {
+                "0": {
+                    "connIdle": 300,
+                    "handshake": 4,
+                    "uplinkOnly": 1,
+                    "downlinkOnly": 1
+                }
+            },
+            "system": {
+                "statsOutboundUplink": true,
+                "statsOutboundDownlink": true
+            }
+        },
+        "stats": {}
+    }
+]
